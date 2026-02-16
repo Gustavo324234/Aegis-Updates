@@ -97,6 +97,12 @@ if [ -d "$INSTALL_DIR" ]; then
          echo "   -> Migrating Vector DB to Data Layer..."
          mv "$INSTALL_DIR/chroma_db" "$DATA_DIR/"
     fi
+
+    # Tenants Registry (Critical Persistence)
+    if [ -f "$INSTALL_DIR/tenants_registry.json" ] && [ ! -f "$DATA_DIR/tenants_registry.json" ]; then
+         echo "   -> Migrating Tenant Registry to Data Layer..."
+         mv "$INSTALL_DIR/tenants_registry.json" "$DATA_DIR/"
+    fi
     
     echo "   ✅ Migration Complete."
     
@@ -203,6 +209,7 @@ RestartSec=5
 Environment=PATH=$ABS_INSTALL_DIR/.venv/bin:/usr/bin:/usr/local/bin
 Environment=PYTHONIOENCODING=utf-8
 Environment=STREAMLIT_CONFIG_DIR=$ABS_INSTALL_DIR/.streamlit
+Environment=AEGIS_USER_ROOT=$DATA_DIR
 
 [Install]
 WantedBy=multi-user.target
