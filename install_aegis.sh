@@ -52,6 +52,23 @@ if [ -n "$MISSING_PKGS" ]; then
     fi
 fi
 
+# 3.5 Stop Existing Services
+echo "🛑 Shutting down existing Aegis services to prevent conflicts..."
+if command -v systemctl >/dev/null 2>&1 && systemctl is-active --quiet aegis; then
+    echo "   Stopping systemd service..."
+    if command -v sudo >/dev/null 2>&1; then
+        sudo systemctl stop aegis || true
+    else
+        systemctl stop aegis || true
+    fi
+fi
+
+# Kill any orphaned python processes belonging to Aegis framework safely
+pkill -f "process_watchdog.py" || true
+pkill -f "admin_launcher.py" || true
+pkill -f "app_web.py" || true
+pkill -f "nexus_gateway.py" || true
+
 # 4. Atomic Code Download/Extract (Replacing old code)
 echo "⬇️ Downloading Core System..."
 mkdir -p "$INSTALL_DIR"
