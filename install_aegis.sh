@@ -85,6 +85,12 @@ source .venv/bin/activate
 pip install --upgrade pip > /dev/null
 pip install -r requirements.txt > /dev/null
 
+# If on Linux and chromadb failed in requirements, force the python package
+if ! python3 -c "import chromadb" &> /dev/null; then
+    echo "   🛠️ Force-installing VectorDB bindings..."
+    pip install chromadb pysqlite3-binary > /dev/null
+fi
+
 # 6. Verify Integrity Check
 echo "🛡️ Running Aegis Integrity Protocols..."
 if ! python verify_integrity.py; then
@@ -93,7 +99,7 @@ if ! python verify_integrity.py; then
 fi
 
 # 7. Final Launch via Watchdog (Lázaro Protocol)
-LOCAL_IP=$(hostname -I | awk '{print $1}' 2>/dev/null || ip route get 1 | awk '{print $7}')
+LOCAL_IP=$(python3 -c "import socket; s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM); s.connect(('8.8.8.8', 80)); print(s.getsockname()[0]); s.close()" 2>/dev/null)
 if [ -z "$LOCAL_IP" ]; then LOCAL_IP="127.0.0.1"; fi
 
 echo ""
