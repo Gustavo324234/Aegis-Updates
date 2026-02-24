@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # --- AEGIS INSTALLER FOR LINUX (Headless Architecture) ---
-# Protocol: Safe Install Directory
+# Protocol: Safe Install Directory (Public Guest Mode)
 # Automated deployment script for Debian/Ubuntu based systems.
 # FastAPI Backend + React/Vite Frontend
 
@@ -9,6 +9,7 @@ set -e
 
 # 0. Define and Navigate to Safe Installation Directory
 INSTALL_DIR="$HOME/Aegis-IA"
+# Force HTTPS public URL to avoid credential prompts
 REPO_URL="https://github.com/Gustavo324234/Aegis-IA.git"
 
 # Clear screen for a premium feel
@@ -21,22 +22,27 @@ if [ ! -d "$INSTALL_DIR" ]; then
     echo "📂 Creating secure installation directory: $INSTALL_DIR"
     mkdir -p "$INSTALL_DIR"
     cd "$INSTALL_DIR"
-    echo "📡 Cloning repository..."
+    echo "📡 Cloning repository (Public/Guest)..."
     git clone "$REPO_URL" .
 else
     echo "📂 Existing installation found at $INSTALL_DIR. Synchronizing..."
     cd "$INSTALL_DIR"
+    
+    # Ensure remote is set to public HTTPS to prevent credential prompts
     if [ -d ".git" ]; then
+        echo "🔄 Updating remote URL to Public HTTPS..."
+        git remote set-url origin "$REPO_URL" || git remote add origin "$REPO_URL"
         echo "🔄 Pulling latest updates..."
-        git pull origin main || git pull origin master || echo "⚠️ Warning: git pull failed, continuing with local files."
+        # Try main then master, without tags or prompts
+        git fetch origin
+        git reset --hard origin/main 2>/dev/null || git reset --hard origin/master 2>/dev/null || echo "⚠️ Warning: Update failed, using local files."
     else
         if [ -n "$(ls -A "$INSTALL_DIR" 2>/dev/null)" ]; then
-            echo "⚠️ Warning: Directory exists and is not empty, but no .git found."
-            echo "🛠️ Attempting to repair and fetch source code..."
+            echo "⚠️ Warning: Folder is not empty but not a git repo. Initializing cleaner..."
             git init
-            git remote add origin "$REPO_URL" || true
+            git remote add origin "$REPO_URL"
             git fetch origin
-            git checkout -f origin/main || git checkout -f origin/master || echo "⚠️ Warning: Could not checkout branch."
+            git reset --hard origin/main 2>/dev/null || git reset --hard origin/master 2>/dev/null
         else
             echo "📡 Directory is empty. Cloning repository..."
             git clone "$REPO_URL" .
@@ -49,7 +55,7 @@ PROJECT_ROOT=$(pwd)
 # Verify we have the files
 if [ ! -f "requirements.txt" ]; then
     echo "❌ Error: requirements.txt not found in $PROJECT_ROOT"
-    echo "   Ensure the repository was cloned correctly."
+    echo "   Check your network connection or repository access."
     exit 1
 fi
 
