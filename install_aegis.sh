@@ -55,9 +55,23 @@ cd "$INSTALL_DIR"
 
 echo "📡 Downloading latest AEC-Aegis bundle..."
 if curl -L -o /tmp/aegis_latest.zip "$ZIP_URL"; then
-    echo "📦 Expanding system core..."
+    echo "📦 Extracting system files..."
     unzip -o -q /tmp/aegis_latest.zip -d "$INSTALL_DIR"
     rm /tmp/aegis_latest.zip
+    
+    # --- AUTO-HEAL: Handle nested folder structures from ZIP (e.g., GitHub main/ folder) ---
+    # Find where 'requirements.txt' or 'ui_client' is
+    SEARCH_PATH=$(find "$INSTALL_DIR" -maxdepth 2 -name "requirements.txt" | head -n 1)
+    if [ -n "$SEARCH_PATH" ]; then
+        ACTUAL_ROOT=$(dirname "$SEARCH_PATH")
+        if [ "$ACTUAL_ROOT" != "$INSTALL_DIR" ]; then
+            echo "📂 Detected nested structure at $ACTUAL_ROOT. Adjusting roots..."
+            mv "$ACTUAL_ROOT"/* "$INSTALL_DIR/" 2>/dev/null || true
+            mv "$ACTUAL_ROOT"/.* "$INSTALL_DIR/" 2>/dev/null || true
+            # Clean up empty subdirectory if it's different
+            [ "$ACTUAL_ROOT" != "$INSTALL_DIR" ] && rmdir "$ACTUAL_ROOT" 2>/dev/null || true
+        fi
+    fi
 else
     echo "❌ CRITICAL ERROR: Could not fetch deployment package. Check network."
     exit 1
