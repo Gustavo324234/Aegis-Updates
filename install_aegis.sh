@@ -27,11 +27,31 @@ else
     echo "📂 Existing installation found at $INSTALL_DIR. Synchronizing..."
     cd "$INSTALL_DIR"
     if [ -d ".git" ]; then
+        echo "🔄 Pulling latest updates..."
         git pull origin main || git pull origin master || echo "⚠️ Warning: git pull failed, continuing with local files."
+    else
+        if [ -n "$(ls -A "$INSTALL_DIR" 2>/dev/null)" ]; then
+            echo "⚠️ Warning: Directory exists and is not empty, but no .git found."
+            echo "🛠️ Attempting to repair and fetch source code..."
+            git init
+            git remote add origin "$REPO_URL" || true
+            git fetch origin
+            git checkout -f origin/main || git checkout -f origin/master || echo "⚠️ Warning: Could not checkout branch."
+        else
+            echo "📡 Directory is empty. Cloning repository..."
+            git clone "$REPO_URL" .
+        fi
     fi
 fi
 
 PROJECT_ROOT=$(pwd)
+
+# Verify we have the files
+if [ ! -f "requirements.txt" ]; then
+    echo "❌ Error: requirements.txt not found in $PROJECT_ROOT"
+    echo "   Ensure the repository was cloned correctly."
+    exit 1
+fi
 
 # 2. System Dependencies
 echo "📦 Checking system dependencies..."
@@ -44,7 +64,7 @@ for pkg in $REQUIRED_PKGS; do
 done
 
 if [ -n "$MISSING_PKGS" ]; then
-    echo "   ⚠️ Missing packages:$MISSING_PKGS"
+    echo "   ⚠️ Missing packages: $MISSING_PKGS"
     sudo apt-get update
     sudo apt-get install -y $MISSING_PKGS
 fi
