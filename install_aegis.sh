@@ -1,17 +1,39 @@
 #!/bin/bash
 
 # --- AEGIS INSTALLER FOR LINUX (Headless Architecture) ---
+# Protocol: Safe Install Directory
 # Automated deployment script for Debian/Ubuntu based systems.
 # FastAPI Backend + React/Vite Frontend
 
 set -e
+
+# 0. Define and Navigate to Safe Installation Directory
+INSTALL_DIR="$HOME/Aegis-IA"
+REPO_URL="https://github.com/Gustavo324234/Aegis-IA.git"
 
 # Clear screen for a premium feel
 clear
 echo "🚀 [AEGIS-IA] Starting Automated Installation (Headless Mode)..."
 echo "-------------------------------------------------------------"
 
-# 1. System Dependencies
+# 1. Directory & Source Orchestration
+if [ ! -d "$INSTALL_DIR" ]; then
+    echo "📂 Creating secure installation directory: $INSTALL_DIR"
+    mkdir -p "$INSTALL_DIR"
+    cd "$INSTALL_DIR"
+    echo "📡 Cloning repository..."
+    git clone "$REPO_URL" .
+else
+    echo "📂 Existing installation found at $INSTALL_DIR. Synchronizing..."
+    cd "$INSTALL_DIR"
+    if [ -d ".git" ]; then
+        git pull origin main || git pull origin master || echo "⚠️ Warning: git pull failed, continuing with local files."
+    fi
+fi
+
+PROJECT_ROOT=$(pwd)
+
+# 2. System Dependencies
 echo "📦 Checking system dependencies..."
 REQUIRED_PKGS="python3 python3-venv python3-pip git build-essential curl"
 MISSING_PKGS=""
@@ -27,7 +49,7 @@ if [ -n "$MISSING_PKGS" ]; then
     sudo apt-get install -y $MISSING_PKGS
 fi
 
-# 2. Node.js & npm Detection/Installation
+# 3. Node.js & npm Detection/Installation
 if ! command -v node >/dev/null 2>&1 || ! node -v | grep -qE "v(18|2[0-9])"; then
     echo "🌐 Installing Node.js (v18+)..."
     curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
@@ -36,12 +58,8 @@ else
     echo "✅ Node.js $(node -v) detected."
 fi
 
-# 3. Backend Setup
+# 4. Backend Setup
 echo "🐍 Setting up Backend Environment..."
-# Go to root if we are in Aegis-Updates/
-cd "$(dirname "$0")/.."
-PROJECT_ROOT=$(pwd)
-
 if [ ! -d ".venv" ]; then
     python3 -m venv .venv
 fi
@@ -49,7 +67,7 @@ source .venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 
-# 4. Frontend Setup
+# 5. Frontend Setup
 echo "🎨 Setting up React UI Client..."
 if [ -d "ui_client" ]; then
     cd ui_client
@@ -60,7 +78,7 @@ else
     exit 1
 fi
 
-# 5. Systemd Services Generation
+# 6. Systemd Services Generation
 echo "⚙️  Configuring Persistent Services (Systemd)..."
 USER_NAME=$(whoami)
 NPM_PATH=$(command -v npm)
@@ -106,7 +124,7 @@ sudo systemctl enable aegis-ui
 sudo systemctl start aegis-core
 sudo systemctl start aegis-ui
 
-# 6. Final Messages & Discovery
+# 7. Final Messages & Discovery
 LOCAL_IP=$(hostname -I | awk '{print $1}')
 if [ -z "$LOCAL_IP" ]; then LOCAL_IP="127.0.0.1"; fi
 
