@@ -1,67 +1,43 @@
 #!/bin/bash
 
 # --- AEGIS INSTALLER FOR LINUX (Headless Architecture) ---
-# Protocol: Safe Install Directory (Public Guest Mode)
+# Protocol: Public Zip Distribution (Aegis-Updates)
 # Automated deployment script for Debian/Ubuntu based systems.
 # FastAPI Backend + React/Vite Frontend
 
 set -e
 
-# 0. Define and Navigate to Safe Installation Directory
+# 0. Configuration
 INSTALL_DIR="$HOME/Aegis-IA"
-# Force HTTPS public URL to avoid credential prompts
-REPO_URL="https://github.com/Gustavo324234/Aegis-IA.git"
+UPDATE_REPO_URL="https://raw.githubusercontent.com/Gustavo324234/Aegis-Updates/main"
+ZIP_URL="$UPDATE_REPO_URL/aegis_latest.zip"
 
 # Clear screen for a premium feel
 clear
 echo "🚀 [AEGIS-IA] Starting Automated Installation (Headless Mode)..."
 echo "-------------------------------------------------------------"
 
-# 1. Directory & Source Orchestration
-if [ ! -d "$INSTALL_DIR" ]; then
-    echo "📂 Creating secure installation directory: $INSTALL_DIR"
-    mkdir -p "$INSTALL_DIR"
-    cd "$INSTALL_DIR"
-    echo "📡 Cloning repository (Public/Guest)..."
-    git clone "$REPO_URL" .
+# 1. Directory & Source Orchestration (Public Download)
+echo "📂 Preparing installation directory: $INSTALL_DIR"
+mkdir -p "$INSTALL_DIR"
+cd "$INSTALL_DIR"
+
+echo "📡 Downloading latest core components from Aegis-Updates..."
+if curl -L -o /tmp/aegis_latest.zip "$ZIP_URL"; then
+    echo "📦 Extracting system files..."
+    # We use -o to overwrite existing files upon update
+    unzip -o -q /tmp/aegis_latest.zip -d "$INSTALL_DIR"
+    rm /tmp/aegis_latest.zip
 else
-    echo "📂 Existing installation found at $INSTALL_DIR. Synchronizing..."
-    cd "$INSTALL_DIR"
-    
-    # Ensure remote is set to public HTTPS to prevent credential prompts
-    if [ -d ".git" ]; then
-        echo "🔄 Updating remote URL to Public HTTPS..."
-        git remote set-url origin "$REPO_URL" || git remote add origin "$REPO_URL"
-        echo "🔄 Pulling latest updates..."
-        # Try main then master, without tags or prompts
-        git fetch origin
-        git reset --hard origin/main 2>/dev/null || git reset --hard origin/master 2>/dev/null || echo "⚠️ Warning: Update failed, using local files."
-    else
-        if [ -n "$(ls -A "$INSTALL_DIR" 2>/dev/null)" ]; then
-            echo "⚠️ Warning: Folder is not empty but not a git repo. Initializing cleaner..."
-            git init
-            git remote add origin "$REPO_URL"
-            git fetch origin
-            git reset --hard origin/main 2>/dev/null || git reset --hard origin/master 2>/dev/null
-        else
-            echo "📡 Directory is empty. Cloning repository..."
-            git clone "$REPO_URL" .
-        fi
-    fi
+    echo "❌ Error: Could not download the update package. Check your connection."
+    exit 1
 fi
 
 PROJECT_ROOT=$(pwd)
 
-# Verify we have the files
-if [ ! -f "requirements.txt" ]; then
-    echo "❌ Error: requirements.txt not found in $PROJECT_ROOT"
-    echo "   Check your network connection or repository access."
-    exit 1
-fi
-
 # 2. System Dependencies
 echo "📦 Checking system dependencies..."
-REQUIRED_PKGS="python3 python3-venv python3-pip git build-essential curl"
+REQUIRED_PKGS="python3 python3-venv python3-pip git build-essential curl unzip"
 MISSING_PKGS=""
 for pkg in $REQUIRED_PKGS; do
     if ! dpkg -s $pkg >/dev/null 2>&1; then
@@ -91,7 +67,12 @@ if [ ! -d ".venv" ]; then
 fi
 source .venv/bin/activate
 pip install --upgrade pip
-pip install -r requirements.txt
+if [ -f "requirements.txt" ]; then
+    pip install -r requirements.txt
+else
+    echo "❌ Error: requirements.txt not found after extraction in $PROJECT_ROOT"
+    exit 1
+fi
 
 # 5. Frontend Setup
 echo "🎨 Setting up React UI Client..."
