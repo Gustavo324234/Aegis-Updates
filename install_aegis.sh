@@ -131,7 +131,15 @@ sudo systemctl enable aegis-ui
 sudo systemctl start aegis-core
 sudo systemctl start aegis-ui
 
-# 7. Final Messages & Discovery
+# 7. Firewall Configuration (Security Protocol)
+if command -v ufw >/dev/null 2>&1; then
+    echo "🛡️  Configuring Firewall (UFW): Opening ports 5173 and 8000..."
+    sudo ufw allow 5173/tcp > /dev/null || true
+    sudo ufw allow 8000/tcp > /dev/null || true
+    # If ufw is disabled, don't force it on, just ensure the rules are there.
+fi
+
+# 8. Final Messages & Discovery
 LOCAL_IP=$(hostname -I | awk '{print $1}')
 if [ -z "$LOCAL_IP" ]; then LOCAL_IP="127.0.0.1"; fi
 
