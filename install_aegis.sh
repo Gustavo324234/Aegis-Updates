@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # --- AEGIS INSTALLER FOR LINUX (Zero-Touch Production Architecture) ---
-# Protocol: Self-Healing Full Automation
+# Protocol: Self-Healing Full Automation v3 (Omni-Locator Engine)
 # Author: Aegis-IA Release Engineer
 
 set -e
@@ -16,7 +16,7 @@ ZIP_URL="$UPDATE_REPO_URL/aegis_latest.zip"
 
 # Clear screen for a premium feel
 clear
-echo "🚀 [AEGIS-IA] Starting Full Automated Deployment..."
+echo "🚀 [AEGIS-IA] Starting Full Automated Deployment (Omni-Locator Mode)..."
 echo "-------------------------------------------------------------"
 
 # 1. System Dependencies (Core)
@@ -59,17 +59,17 @@ if curl -L -o /tmp/aegis_latest.zip "$ZIP_URL"; then
     unzip -o -q /tmp/aegis_latest.zip -d "$INSTALL_DIR"
     rm /tmp/aegis_latest.zip
     
-    # --- AUTO-HEAL: Handle nested folder structures from ZIP (e.g., GitHub main/ folder) ---
-    # Find where 'requirements.txt' or 'ui_client' is
-    SEARCH_PATH=$(find "$INSTALL_DIR" -maxdepth 2 -name "requirements.txt" | head -n 1)
-    if [ -n "$SEARCH_PATH" ]; then
-        ACTUAL_ROOT=$(dirname "$SEARCH_PATH")
+    # --- OMNI-LOCATOR: Normalize structure regardless of ZIP nesting ---
+    echo "🔍 Analyzing structure topology..."
+    # Find the heart of the project (requirements.txt)
+    HART_PATH=$(find "$INSTALL_DIR" -maxdepth 4 -name "requirements.txt" | head -n 1)
+    if [ -n "$HART_PATH" ]; then
+        ACTUAL_ROOT=$(dirname "$HART_PATH")
         if [ "$ACTUAL_ROOT" != "$INSTALL_DIR" ]; then
-            echo "📂 Detected nested structure at $ACTUAL_ROOT. Adjusting roots..."
-            mv "$ACTUAL_ROOT"/* "$INSTALL_DIR/" 2>/dev/null || true
-            mv "$ACTUAL_ROOT"/.* "$INSTALL_DIR/" 2>/dev/null || true
-            # Clean up empty subdirectory if it's different
-            [ "$ACTUAL_ROOT" != "$INSTALL_DIR" ] && rmdir "$ACTUAL_ROOT" 2>/dev/null || true
+            echo "📂 Detected nested structure at $ACTUAL_ROOT. Moving files to root..."
+            cp -r "$ACTUAL_ROOT"/. "$INSTALL_DIR/" 2>/dev/null || true
+            # Avoid deleting the current directory if we are in it
+            [ "$ACTUAL_ROOT" != "$INSTALL_DIR" ] && rm -rf "$ACTUAL_ROOT"
         fi
     fi
 else
@@ -90,30 +90,71 @@ if [ -f "requirements.txt" ]; then
     echo "   🛠️  Installing neural dependencies..."
     pip install -r requirements.txt -q
 else
-    echo "❌ ERROR: requirements.txt missing in bundle!"
+    echo "❌ ERROR: requirements.txt missing after normalization!"
     exit 1
 fi
 
 # 5. Frontend Production Architecture
 echo "🎨 Compiling Production UI (React + Vite 7)..."
-if [ -d "ui_client" ]; then
-    cd ui_client
-    # Verify index.html exists in root
+
+# Find ui_client folder wherever it is
+UI_PATH=$(find "$PROJECT_ROOT" -maxdepth 3 -type d -name "ui_client" | head -n 1)
+if [ -n "$UI_PATH" ]; then
+    cd "$UI_PATH"
+    echo "   📍 Fixed UI environment: $(pwd)"
+    
+    # Verify index.html existence and vital files
     if [ ! -f "index.html" ]; then
-        echo "   ⚠️  Warning: index.html not in ui_client root. Checking subdirs..."
-        # In case the zip structure has another level
-        if [ -f "src/index.html" ]; then mv src/index.html ./; fi
+        echo "   🔍 index.html not found in current UI root. Searchingโครงการ..."
+        DEEP_INDEX=$(find "$PROJECT_ROOT" -name "index.html" | head -n 1)
+        if [ -n "$DEEP_INDEX" ]; then
+            echo "   ✅ Found at $DEEP_INDEX. Relocating..."
+            cp "$DEEP_INDEX" ./index.html
+        else
+            echo "   ⚠️  Warning: index.html missing from bundle. Creating emergency shim..."
+            cat <<EOF > index.html
+<!doctype html>
+<html lang="en"><head><meta charset="UTF-8" /><title>Aegis-IA</title></head>
+<body><div id="root"></div><script type="module" src="/src/main.jsx"></script></body></html>
+EOF
+        fi
+    fi
+
+    # Vital Source locator
+    if [ ! -d "src" ]; then
+        echo "   🔍 src/ directory missing in UI root. Looking for survivors..."
+        DEEP_SRC=$(find "$PROJECT_ROOT" -type d -name "src" | grep "ui_client" | head -n 1)
+        if [ -n "$DEEP_SRC" ] && [ "$DEEP_SRC" != "$(pwd)/src" ]; then
+            echo "   ✅ Found src at $DEEP_SRC. Moving to root..."
+            cp -r "$DEEP_SRC" ./
+        fi
+    fi
+
+    # Vite Config locator
+    if [ ! -f "vite.config.mjs" ] && [ ! -f "vite.config.js" ]; then
+        echo "   🛠️  Recreating building specs (Vite Config)..."
+        cat <<EOF > vite.config.mjs
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react-swc';
+import tailwindcss from '@tailwindcss/vite';
+export default defineConfig({ plugins: [react(), tailwindcss()] });
+EOF
     fi
     
-    echo "   📦 Fetching frontend modules..."
-    rm -rf node_modules package-lock.json
+    echo "   📦 Fetching modules (npm install)..."
+    rm -rf node_modules
     npm install --no-audit --no-fund --quiet
     
-    echo "   ⚡ Optimizing assets for high performance..."
-    npm run build --quiet
-    cd ..
+    echo "   ⚡ Optimizing assets..."
+    # Build attempt with debug info
+    if ! npm run build; then
+        echo "❌ BUILD FAILED. PROJECT MAP:"
+        find . -maxdepth 2
+        exit 1
+    fi
+    cd "$PROJECT_ROOT"
 else
-    echo "❌ ERROR: ui_client directory not found!"
+    echo "❌ ERROR: ui_client directory not found anywhere!"
     exit 1
 fi
 
@@ -164,10 +205,8 @@ echo "-------------------------------------------------------------"
 echo "🛡️  AEGIS-IA DEPLOYMENT SUCCESSFUL"
 echo "============================================================="
 echo "🌍 ACCESS INTERFACE: http://$LOCAL_IP:8000"
-echo "📡 CORE STATUS:      Running (Unified Mode)"
 echo "============================================================="
 echo "💡 Commands for SRE:"
 echo "   - Watch Logs: journalctl -u aegis-core -f"
 echo "   - Restart:    sudo systemctl restart aegis-core"
 echo "-------------------------------------------------------------"
-echo "Instalación completada. Aegis es ahora accesible en tu red local."
