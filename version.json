@@ -1,7 +1,7 @@
 {
     "version": "23.0",
-    "hash": "06db62c",
-    "build_date": "2026-02-21T21:55:02.820957",
-    "changelog": "06db62c - Auto-Deploy Fixes: Verify Integrity auto-installs missing dependencies via PIP\nb86d4fa - V25\n07eda57 - V25\nd49e67b - V25\nf836a97 - V25",
+    "hash": "60b664e",
+    "build_date": "2026-02-24T02:47:20.986947",
+    "changelog": "60b664e - V30\n61fb01d - V30\n0b085a8 - Auto-Deploy Fixes: Remove Streamlit Bare Mode warnings from Watchdog output\n0fa39d6 - V25\n06db62c - Auto-Deploy Fixes: Verify Integrity auto-installs missing dependencies via PIP",
     "zip_url": "https://raw.githubusercontent.com/Gustavo324234/Aegis-Updates/main/aegis_latest.zip"
 }
