@@ -142,7 +142,7 @@ EOF
     fi
     
     echo "   📦 Fetching modules (npm install)..."
-    rm -rf node_modules
+    rm -rf node_modules package-lock.json
     npm install --no-audit --no-fund --quiet
     
     echo "   ⚡ Optimizing assets..."
