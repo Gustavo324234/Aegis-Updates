@@ -40,10 +40,25 @@ fi
 # 3. PHASE: Compilation (CRITICAL for Headless Multi-Tenant)
 echo "⚙️ Phase 3: Compiling system components..."
 
-# Execute backend setup
+# Ensure Virtual Environment exists
+if [ ! -d ".venv" ]; then
+    echo "🐍 Creating virtual environment (.venv)..."
+    python3 -m venv .venv || { echo "❌ Error: Could not create venv. Is python3-venv installed?"; exit 1; }
+fi
+
+# Install/Update Python dependencies
+echo "📦 Synchronizing Python environment..."
+"$VENV_PATH" -m pip install --upgrade pip --quiet
+if [ -f "requirements.txt" ]; then
+    "$VENV_PATH" -m pip install -r requirements.txt --quiet
+else
+    echo "⚠️ Warning: requirements.txt not found."
+fi
+
+# Execute backend setup (DB migrations, etc)
 if [ -f "setup.py" ]; then
-    echo "🐍 Running Python setup..."
-    python3 setup.py
+    echo "🏗️  Running system setup..."
+    "$VENV_PATH" setup.py
 else
     echo "⚠️ Warning: setup.py not found, skipping."
 fi
@@ -67,18 +82,21 @@ echo "🚀 Phase 4: Restarting Aegis-IA Core Service..."
 
 if [ -f "$VENV_PATH" ]; then
     echo "🛰️  Lifting backend in background mode..."
+    # Kill any existing process on port 8000 just in case P1 missed it
+    sudo fuser -k 8000/tcp > /dev/null 2>&1 || true
+    
     nohup "$VENV_PATH" -m uvicorn server_aegis:app --host 0.0.0.0 --port 8000 > aegis_system.log 2>&1 &
     
     # Optional: Brief wait to ensure it starts
-    sleep 2
+    sleep 3
     if pgrep -f "server_aegis:app" > /dev/null; then
         echo "✅ Aegis-IA is now LIVE at http://0.0.0.0:8000"
     else
         echo "❌ Critical: Server failed to start. Check aegis_system.log"
+        tail -n 20 aegis_system.log
     fi
 else
-    echo "❌ Error: Virtual environment not found at $VENV_PATH"
-    echo "💡 Try running 'python3 -m venv .venv' and 'pip install -r requirements.txt' first."
+    echo "❌ Error: Virtual environment still missing at $VENV_PATH"
     exit 1
 fi
 
