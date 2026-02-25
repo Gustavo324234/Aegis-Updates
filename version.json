@@ -1,7 +1,7 @@
 {
     "version": "23.0",
-    "hash": "5aef2d5",
-    "build_date": "2026-02-25T00:39:55.421392",
-    "changelog": "5aef2d5 - V30\n189827a - Delete install_aegis.sh\n60b664e - V30\n61fb01d - V30\n0b085a8 - Auto-Deploy Fixes: Remove Streamlit Bare Mode warnings from Watchdog output",
+    "hash": "10f2fb6",
+    "build_date": "2026-02-25T02:16:12.694301",
+    "changelog": "10f2fb6 - V30\n5aef2d5 - V30\n189827a - Delete install_aegis.sh\n60b664e - V30\n61fb01d - V30",
     "zip_url": "https://raw.githubusercontent.com/Gustavo324234/Aegis-Updates/main/aegis_latest.zip"
 }
